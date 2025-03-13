@@ -7,10 +7,13 @@ import glob
 import base64
 # import tensorflow as tf  # Removing TensorFlow import
 from models.recommendation_model import RecipeRecommender
+from sklearn.metrics.pairwise import cosine_similarity
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__, static_folder='../Food Images')
-# Enable CORS for all routes with all origins
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app)
 
 # Initialize the recommender
 dataset_path = '../Food Ingredients and Recipe Dataset with Image Name Mapping.csv'
@@ -254,5 +257,5 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"Error loading dataset: {e}")
     
-    # Run the Flask app
-    app.run(debug=True, host='0.0.0.0') 
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port) 

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { getImageUrl, handleImageError } from '../utils';
+import config from '../config';
 
 const RecipeCard = ({ recipe, index }) => {
   const [ref, inView] = useInView({
@@ -112,20 +113,46 @@ const RecipeCard = ({ recipe, index }) => {
   );
 };
 
-const RecipeList = ({ recipes }) => {
+const RecipeList = ({ ingredients }) => {
+  const [recipes, setRecipes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  if (!recipes || recipes.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-6 h-full flex flex-col justify-center items-center text-center">
-        <div className="text-6xl mb-4">🍽️</div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-2">No Recipes Yet</h2>
-        <p className="text-gray-600">
-          Tell me what ingredients you have, and I'll find matching recipes for you!
-        </p>
-      </div>
-    );
-  }
+  const fetchRecipes = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${config.API_URL}/api/recommend`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ingredients }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch recipes');
+      }
+      
+      const data = await response.json();
+      setRecipes(data);
+    } catch (error) {
+      setError(error.message);
+      console.error('Error fetching recipes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (ingredients && ingredients.length > 0) {
+      fetchRecipes();
+    }
+  }, [ingredients]);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!recipes || recipes.length === 0) return <div>No recipes found</div>;
 
   const goToNextRecipe = () => {
     setCurrentIndex((prev) => (prev + 1) % recipes.length);
