@@ -14,6 +14,7 @@ services:
 
   - type: web
     name: recipe-recommendation-frontend
+    runtime: static
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/build
     envVars:
