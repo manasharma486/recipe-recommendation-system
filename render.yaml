@@ -3,14 +3,14 @@ services:
     name: recipe-recommendation-api
     runtime: python
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: gunicorn --chdir backend 'app:app'
+    startCommand: gunicorn wsgi:application
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
       - key: PORT
         value: 10000
       - key: PYTHONPATH
-        value: backend
+        value: .
 
   - type: web
     name: recipe-recommendation-frontend
