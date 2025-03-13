@@ -1,137 +1,158 @@
 # Recipe Recommendation System
 
-A web application that recommends recipes based on the ingredients you have available. Simply enter the ingredients you have in your kitchen, and the system will suggest recipes you can make.
+A web application that recommends recipes based on available ingredients, featuring an interactive interface and image support.
 
 ## Features
 
-- **Ingredient-Based Recipe Search**: Enter ingredients you have, and get matching recipes
-- **Interactive Chat Interface**: Easy-to-use chat interface for entering ingredients
-- **Recipe Details**: View detailed recipe information including ingredients, instructions, and ratings
-- **Image Support**: Visual representation of recipes with food images
-- **Responsive Design**: Works on desktop and mobile devices
+- Ingredient-based recipe search
+- Interactive chat interface
+- Detailed recipe information with images
+- Recipe ratings and instructions
+- Responsive design
+- Ingredient matching highlighting
 
 ## Tech Stack
 
 ### Backend
-- **Flask**: Python web framework for the API
-- **Pandas**: For data processing and manipulation
-- **NumPy**: For numerical operations
-- **CORS**: For cross-origin resource sharing
+- Flask (Python web framework)
+- Pandas (Data processing)
+- NumPy (Numerical computations)
+- scikit-learn (TF-IDF model)
+- Flask-CORS (Cross-Origin Resource Sharing)
+- Gunicorn (WSGI HTTP Server)
 
 ### Frontend
-- **React**: JavaScript library for building the user interface
-- **Tailwind CSS**: Utility-first CSS framework for styling
-- **Framer Motion**: For smooth animations and transitions
-- **React Intersection Observer**: For lazy loading components
+- React
+- Tailwind CSS
+- Framer Motion (Animations)
+- React Intersection Observer
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed:
-- **Python 3.8+**: For running the backend server
-- **Node.js and npm**: For running the frontend application
+- Python 3.9+
+- Node.js and npm
+- Git
 
 ## Installation
 
-### 1. Clone the Repository
-
+1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone <your-repository-url>
 cd recipe-recommendation-system
 ```
 
-### 2. Set Up the Backend
-
-Navigate to the backend directory and install the required Python packages:
-
+2. Set up the backend:
 ```bash
 cd backend
 pip install -r requirements.txt
 ```
 
-### 3. Set Up the Frontend
-
-Navigate to the frontend directory and install the required npm packages:
-
+3. Set up the frontend:
 ```bash
-cd ../frontend
+cd frontend
 npm install
 ```
 
-## Running the Application
+## Running Locally
 
-### 1. Start the Backend Server
-
-From the project root directory:
-
+1. Start the backend server:
 ```bash
 cd backend
 python app.py
 ```
+The backend will run on http://localhost:5000
 
-The Flask server will start running at `http://localhost:5000`.
-
-### 2. Start the Frontend Development Server
-
-Open a new terminal window, navigate to the project root directory, and run:
-
+2. Start the frontend development server:
 ```bash
 cd frontend
 npm start
 ```
+The frontend will run on http://localhost:3000
 
-The React development server will start running at `http://localhost:3000`.
+## Deployment
 
-### 3. Access the Application
+This project is configured for deployment on Render.com.
 
-Open your web browser and go to `http://localhost:3000` to use the application.
+### Deployment Configuration
 
-## How to Use
+The project includes a `render.yaml` file that defines the deployment configuration:
 
-1. **Enter Ingredients**: Type the ingredients you have in the chat box (e.g., "chicken, rice, tomatoes")
-2. **Get Recommendations**: The system will analyze your ingredients and suggest recipes
-3. **View Recipe Details**: Click "View Recipe" to see the full instructions
-4. **Try Different Combinations**: Experiment with different ingredient combinations to discover new recipes
+1. Backend Web Service:
+   - Runtime: Python
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `cd backend && gunicorn app:app`
+   - Environment Variables:
+     - PYTHON_VERSION: 3.9.0
+     - PORT: 10000
 
-## Troubleshooting
+2. Frontend Static Site:
+   - Build Command: `cd frontend && npm install && npm run build`
+   - Publish Directory: `frontend/build`
+   - Environment Variables:
+     - REACT_APP_API_URL: (automatically set to backend URL)
 
-### Backend Issues
+### Deploying to Render
 
-- **Missing Dataset**: Ensure the dataset file is in the correct location
-- **Port Already in Use**: If port 5000 is already in use, modify the port in `app.py`
-- **Module Not Found**: Make sure all required packages are installed with `pip install -r requirements.txt`
-
-### Frontend Issues
-
-- **Node Modules Missing**: Run `npm install` in the frontend directory
-- **Connection to Backend Failed**: Ensure the backend server is running
-- **Image Loading Issues**: Check that the image paths in the backend are correct
+1. Create a Render account at https://render.com
+2. Connect your GitHub repository
+3. Click "New +" and select "Web Service"
+4. Choose your repository
+5. Render will automatically detect the configuration from `render.yaml`
+6. Click "Create Web Service"
 
 ## Project Structure
 
 ```
 recipe-recommendation-system/
 ├── backend/
-│   ├── app.py                 # Main Flask application
-│   ├── models/                # ML models and recommendation logic
-│   │   └── recommendation_model.py
-│   ├── data/                  # Data storage
-│   └── requirements.txt       # Python dependencies
+│   ├── app.py                 # Flask application
+│   ├── models/               # ML models
+│   └── Food Images/          # Recipe images
 ├── frontend/
-│   ├── public/                # Static files
-│   ├── src/                   # React source code
-│   │   ├── components/        # React components
-│   │   ├── App.js             # Main application component
-│   │   └── index.js           # Entry point
-│   └── package.json           # npm dependencies
-├── Food Images/               # Recipe images
-└── README.md                  # Project documentation
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   ├── utils/           # Utility functions
+│   │   └── config.js        # Configuration
+│   └── public/              # Static assets
+├── requirements.txt         # Python dependencies
+└── render.yaml             # Render deployment config
 ```
+
+## Usage
+
+1. Enter ingredients in the search bar
+2. Get personalized recipe recommendations
+3. View detailed recipe information including:
+   - Ingredients list with matching highlights
+   - Step-by-step instructions
+   - Recipe images
+   - Ratings
+
+## Troubleshooting
+
+### Common Issues
+
+1. Backend not starting:
+   - Check if all Python dependencies are installed
+   - Verify Python version (3.9+)
+   - Check if port 5000 is available
+
+2. Frontend not connecting:
+   - Verify backend URL in `config.js`
+   - Check CORS settings
+   - Ensure backend is running
+
+3. Images not loading:
+   - Verify image paths
+   - Check image directory structure
+   - Ensure image format is supported (jpg, jpeg, png)
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+[Your License Here]
 
 ## Acknowledgments
 
-- Recipe data sourced from Epicurious (https://www.epicurious.com/)
-- Food images included in the dataset 
+- Recipe dataset source
+- Image contributors
+- Open source libraries used in the project 
