@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, Response
+from flask import Flask, request, jsonify, send_from_directory, Response, send_file
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
@@ -89,63 +89,30 @@ def test_images():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Serve images from the Food Images directory - simplified approach
-@app.route('/api/images/<path:filename>')
-def serve_image(filename):
-    """Serve images from the images directory"""
-    print(f"Image request received for: {filename}")
+# Serve images from the Food Images folder
+@app.route('/api/images/<image_name>')
+def serve_image(image_name):
+    # Clean up the image name to prevent directory traversal
+    image_name = os.path.basename(image_name)
     
-    # If the filename is "default-recipe-image", return the default SVG
-    if filename == 'default-recipe-image':
-        return default_image()
-    
-    # Check if the images directory exists
-    if not os.path.exists(images_dir):
-        print(f"Images directory not found: {images_dir}")
-        return default_image()
-    
-    # Define a function to check if a file exists with any of the common extensions
-    def find_with_extension(base_name):
-        for ext in ['.jpg', '.jpeg', '.png', '.gif']:
-            full_name = f"{base_name}{ext}"
-            full_path = os.path.join(images_dir, full_name)
-            if os.path.exists(full_path):
-                print(f"Found image at: {full_path}")
-                return full_name
-        return None
-    
-    # First try with the exact filename
-    file_with_ext = find_with_extension(filename)
-    if file_with_ext:
-        print(f"Found exact match: {file_with_ext}")
-        try:
-            response = send_from_directory(images_dir, file_with_ext)
-            # Add CORS headers explicitly
-            response.headers.add('Access-Control-Allow-Origin', '*')
-            return response
-        except Exception as e:
-            print(f"Error serving image {file_with_ext}: {str(e)}")
-            return default_image()
-    
-    # If no exact match, try to find pattern matches
+    # First, try to find an exact match with extension
     for ext in ['.jpg', '.jpeg', '.png', '.gif']:
-        pattern = os.path.join(images_dir, f"{filename}*{ext}")
-        matching_files = glob.glob(pattern)
-        if matching_files:
-            match_file = os.path.basename(matching_files[0])
-            print(f"Found pattern match: {match_file}")
-            try:
-                response = send_from_directory(images_dir, match_file)
-                # Add CORS headers explicitly
-                response.headers.add('Access-Control-Allow-Origin', '*')
-                return response
-            except Exception as e:
-                print(f"Error serving image {match_file}: {str(e)}")
-                return default_image()
+        image_path = os.path.join(images_dir, f"{image_name}{ext}")
+        if os.path.exists(image_path):
+            response = send_file(image_path, mimetype=f'image/{ext[1:]}')
+            # Add CORS headers
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            response.headers.add('Access-Control-Allow-Methods', 'GET')
+            response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+            response.headers.add('Cache-Control', 'max-age=86400')  # Cache for 24 hours
+            return response
     
-    # If no matching file is found
-    print(f"Image not found: {filename}")
-    return default_image()
+    # If we got here, we couldn't find the image with any extension
+    print(f"Image not found: {image_name}", file=sys.stderr)
+    
+    # Return a 404 instead of redirecting to a default image
+    # This will let the frontend handle the fallback with an embedded image
+    return jsonify({"error": "Image not found"}), 404
 
 # Load the dataset
 @app.route('/api/load_data', methods=['GET'])
@@ -211,15 +178,32 @@ def recommend_recipes():
         backend_url = request.host_url.rstrip('/')  # Get the base URL of the backend
         for recipe in recommended_recipes:
             if recipe.get('image_name'):
-                # Print debug info for each image
-                print(f"Recipe image name: {recipe['image_name']}")
-                # Remove file extension if present
+                # Check if file exists
                 image_name = os.path.splitext(recipe['image_name'])[0]
-                # Use absolute URL with the backend host
-                recipe['image_url'] = f"{backend_url}/api/images/{image_name}"
-                print(f"Set image URL to: {recipe['image_url']}")
+                
+                # Don't set image_url if we don't have the image file
+                # This will make frontend use the embedded fallback
+                found_image = False
+                for ext in ['.jpg', '.jpeg', '.png', '.gif']:
+                    full_name = f"{image_name}{ext}"
+                    full_path = os.path.join(images_dir, full_name)
+                    if os.path.exists(full_path):
+                        found_image = True
+                        break
+                
+                if found_image:
+                    recipe['image_url'] = f"{backend_url}/api/images/{image_name}"
+                    print(f"Set image URL to: {recipe['image_url']}")
+                else:
+                    # Instead of serving a "default" image that might get blocked,
+                    # just don't set an image URL, forcing frontend to use embedded image
+                    recipe['image_name'] = None  # Let frontend use embedded fallback
+                    print(f"Image not found for: {image_name}, using frontend fallback")
         
-        return jsonify({'recipes': recommended_recipes}), 200
+        # Add CORS headers to the response
+        response = jsonify({'recipes': recommended_recipes})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 200
     
     except Exception as e:
         print(f"Unexpected error in recommend_recipes: {str(e)}", file=sys.stderr)
