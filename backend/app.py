@@ -5,6 +5,7 @@ import numpy as np
 import os
 import glob
 import base64
+import sys
 # import tensorflow as tf  # Removing TensorFlow import
 from models.recommendation_model import RecipeRecommender
 from sklearn.metrics.pairwise import cosine_similarity
@@ -16,18 +17,24 @@ app = Flask(__name__, static_folder='../Food Images')
 # Enable full CORS support for all routes and origins
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
+# Get the absolute path of the current file's directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+base_dir = os.path.dirname(current_dir)  # Go up one directory to project root
+
+# Use absolute paths for datasets and images
+dataset_path = os.path.join(base_dir, 'Food Ingredients and Recipe Dataset with Image Name Mapping.csv')
+images_dir = os.path.join(base_dir, 'Food Images', 'Food Images')
+
+# Print the paths for debugging
+print(f"Current directory: {current_dir}")
+print(f"Base directory: {base_dir}")
+print(f"Dataset path: {dataset_path}")
+print(f"Images directory: {images_dir}")
+print(f"Dataset exists: {os.path.exists(dataset_path)}")
+print(f"Images directory exists: {os.path.exists(images_dir)}")
+
 # Initialize the recommender
-dataset_path = '../Food Ingredients and Recipe Dataset with Image Name Mapping.csv'
 recommender = RecipeRecommender(dataset_path)
-
-# Set the path to the images directory - corrected to match actual directory structure
-images_dir = '../Food Images/Food Images'  # This matches the actual nested directory structure
-
-# Print the absolute path for debugging
-print(f"Images directory absolute path: {os.path.abspath(images_dir)}")
-print(f"Directory exists: {os.path.exists(images_dir)}")
-if os.path.exists(images_dir):
-    print(f"Directory contents sample: {os.listdir(images_dir)[:5]}")  # Show first 5 files
 
 # Default image as fallback for missing images
 DEFAULT_IMAGE_SVG = '''
@@ -156,27 +163,43 @@ def recommend_recipes():
     try:
         # Get ingredients from request
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
         user_ingredients = [ingredient.lower() for ingredient in data.get('ingredients', [])]
+        
+        print(f"Received ingredients: {user_ingredients}")
         
         if not user_ingredients:
             return jsonify({'error': 'No ingredients provided'}), 400
         
         # Make sure data is loaded
         if recommender.df is None:
-            # Load data directly instead of calling the route function
+            # Try to load data
             try:
-                recommender.load_data()
+                print("Loading dataset...")
+                success = recommender.load_data()
+                if not success:
+                    return jsonify({'error': 'Failed to load dataset'}), 500
+                    
                 recommender.build_tfidf_model()
+                print("Dataset loaded successfully!")
             except Exception as e:
+                print(f"Error loading dataset: {str(e)}", file=sys.stderr)
                 return jsonify({'error': f'Failed to load dataset: {str(e)}'}), 500
         
         # Get recommendations
-        recommended_recipes = recommender.recommend_recipes_tfidf(user_ingredients, top_n=10)
+        try:
+            recommended_recipes = recommender.recommend_recipes_tfidf(user_ingredients, top_n=10)
+            print(f"Found {len(recommended_recipes)} recipes")
+        except Exception as e:
+            print(f"Error getting recommendations: {str(e)}", file=sys.stderr)
+            return jsonify({'error': f'Error getting recommendations: {str(e)}'}), 500
         
         # Add image URLs to the recipes
         backend_url = request.host_url.rstrip('/')  # Get the base URL of the backend
         for recipe in recommended_recipes:
-            if recipe['image_name']:
+            if recipe.get('image_name'):
                 # Print debug info for each image
                 print(f"Recipe image name: {recipe['image_name']}")
                 # Remove file extension if present
@@ -188,6 +211,7 @@ def recommend_recipes():
         return jsonify({'recipes': recommended_recipes}), 200
     
     except Exception as e:
+        print(f"Unexpected error in recommend_recipes: {str(e)}", file=sys.stderr)
         return jsonify({'error': str(e)}), 500
 
 # Add a simple test HTML page to test image rendering
@@ -262,6 +286,54 @@ def root():
             "/api/test_images": "Test endpoint to list available images"
         }
     })
+
+@app.route('/api/test', methods=['GET'])
+def test_api():
+    """Test route to check if the dataset is loaded properly"""
+    try:
+        # Check dataset status
+        dataset_loaded = recommender.df is not None
+        
+        # If not loaded, try to load it
+        if not dataset_loaded:
+            try:
+                print("Attempting to load dataset...")
+                success = recommender.load_data()
+                if success:
+                    recommender.build_tfidf_model()
+                    dataset_loaded = True
+                    print("Dataset loaded successfully on test!")
+                else:
+                    print("Failed to load dataset during test")
+            except Exception as e:
+                print(f"Error loading dataset during test: {e}", file=sys.stderr)
+        
+        # Create a test recipe if dataset is loaded
+        test_recipe = None
+        if dataset_loaded and recommender.df is not None and len(recommender.df) > 0:
+            try:
+                # Get the first recipe as a test
+                test_idx = 0
+                test_recipe = {
+                    'id': int(test_idx),
+                    'title': recommender.df.iloc[test_idx]['Title'],
+                    'columns_available': recommender.df.columns.tolist()
+                }
+            except Exception as e:
+                print(f"Error creating test recipe: {e}", file=sys.stderr)
+        
+        return jsonify({
+            'status': 'API is working',
+            'dataset_loaded': dataset_loaded,
+            'dataset_path': dataset_path,
+            'dataset_exists': os.path.exists(dataset_path),
+            'dataset_size': os.path.getsize(dataset_path) if os.path.exists(dataset_path) else 0,
+            'test_recipe': test_recipe
+        })
+        
+    except Exception as e:
+        print(f"Error in test API: {e}", file=sys.stderr)
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Load data on startup (directly, not through the route)
