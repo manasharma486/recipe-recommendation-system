@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { getImageUrl, handleImageError } from '../utils';
-import config from '../config';
 
 const RecipeCard = ({ recipe, index }) => {
   const [ref, inView] = useInView({
@@ -113,54 +112,20 @@ const RecipeCard = ({ recipe, index }) => {
   );
 };
 
-const RecipeList = ({ ingredients }) => {
-  const [recipes, setRecipes] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+const RecipeList = ({ recipes }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const fetchRecipes = async () => {
-    try {
-      setLoading(true);
-      console.log("API URL being used:", `${config.API_URL}/api/recommend`);
-      console.log("Ingredients being sent:", ingredients);
-
-      const response = await fetch(`${config.API_URL}/api/recommend`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ingredients }),
-      });
-      
-      console.log("Response status:", response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error response:", errorText);
-        throw new Error(`Failed to fetch recipes: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      setRecipes(data.recipes || []);
-      console.log("Recipes received:", data);
-    } catch (error) {
-      setError(error.message);
-      console.error('Error fetching recipes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (ingredients && ingredients.length > 0) {
-      fetchRecipes();
-    }
-  }, [ingredients]);
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!recipes || recipes.length === 0) return <div>No recipes found</div>;
+  if (!recipes || recipes.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6 h-full flex flex-col justify-center items-center text-center">
+        <div className="text-6xl mb-4">🍽️</div>
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">No Recipes Yet</h2>
+        <p className="text-gray-600">
+          Tell me what ingredients you have, and I'll find matching recipes for you!
+        </p>
+      </div>
+    );
+  }
 
   const goToNextRecipe = () => {
     setCurrentIndex((prev) => (prev + 1) % recipes.length);
