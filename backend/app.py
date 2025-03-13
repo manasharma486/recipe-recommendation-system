@@ -13,7 +13,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__, static_folder='../Food Images')
-CORS(app)
+# Enable full CORS support for all routes and origins
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 # Initialize the recommender
 dataset_path = '../Food Ingredients and Recipe Dataset with Image Name Mapping.csv'

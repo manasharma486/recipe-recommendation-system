@@ -122,6 +122,9 @@ const RecipeList = ({ ingredients }) => {
   const fetchRecipes = async () => {
     try {
       setLoading(true);
+      console.log("API URL being used:", `${config.API_URL}/api/recommend`);
+      console.log("Ingredients being sent:", ingredients);
+
       const response = await fetch(`${config.API_URL}/api/recommend`, {
         method: 'POST',
         headers: {
@@ -130,12 +133,17 @@ const RecipeList = ({ ingredients }) => {
         body: JSON.stringify({ ingredients }),
       });
       
+      console.log("Response status:", response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch recipes');
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error(`Failed to fetch recipes: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
-      setRecipes(data);
+      setRecipes(data.recipes || []);
+      console.log("Recipes received:", data);
     } catch (error) {
       setError(error.message);
       console.error('Error fetching recipes:', error);
