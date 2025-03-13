@@ -248,6 +248,21 @@ def test_images_page():
 def health_check():
     return jsonify({'status': 'healthy'}), 200
 
+# Add root route to handle requests to the root URL
+@app.route('/')
+def root():
+    return jsonify({
+        "status": "online",
+        "message": "Recipe Recommendation API is running",
+        "endpoints": {
+            "/": "Root endpoint with API information",
+            "/api/health": "Health check endpoint",
+            "/api/recommend": "Get recipe recommendations based on ingredients (POST)",
+            "/api/images/<filename>": "Get recipe images",
+            "/api/test_images": "Test endpoint to list available images"
+        }
+    })
+
 if __name__ == '__main__':
     # Load data on startup (directly, not through the route)
     try:

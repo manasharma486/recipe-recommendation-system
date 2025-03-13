@@ -4,6 +4,7 @@ import Header from './components/Header';
 import ChatBox from './components/ChatBox';
 import RecipeList from './components/RecipeList';
 import Footer from './components/Footer';
+import config from './config';
 
 function App() {
   const [ingredients, setIngredients] = useState([]);
@@ -62,7 +63,8 @@ function App() {
     addMessage(`I identified these ingredients: ${extractedIngredients.join(', ')}. Let me find some recipes for you...`, 'bot');
     
     try {
-      const response = await fetch('http://localhost:5000/api/recommend', {
+      console.log('Sending request to:', `${config.API_URL}/api/recommend`);
+      const response = await fetch(`${config.API_URL}/api/recommend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -71,10 +73,11 @@ function App() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch recipes');
+        throw new Error(`Failed to fetch recipes: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
+      console.log('Received data:', data);
       
       // Process recipes to add matched_ingredients
       const processedRecipes = data.recipes.map(recipe => {
