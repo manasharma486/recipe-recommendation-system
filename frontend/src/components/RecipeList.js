@@ -10,6 +10,7 @@ const RecipeCard = ({ recipe, index }) => {
   });
   
   const [showInstructions, setShowInstructions] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   // Helper function to handle ingredients in either string or array format
   const getIngredientsList = (ingredients) => {
@@ -24,6 +25,12 @@ const RecipeCard = ({ recipe, index }) => {
     ? Math.round(recipe.similarity_score * 100)
     : null;
 
+  // Custom image error handler that updates state
+  const handleLocalImageError = (event) => {
+    setImageError(true);
+    handleImageError(event);
+  };
+
   return (
     <motion.div
       ref={ref}
@@ -34,16 +41,19 @@ const RecipeCard = ({ recipe, index }) => {
       className="bg-white rounded-xl shadow-md overflow-hidden recipe-card w-full max-w-2xl mx-auto"
     >
       <div className="w-full h-64 bg-gray-200 overflow-hidden">
-        {recipe.image_name ? (
+        {recipe.image_name && !imageError ? (
           <img 
             src={getImageUrl(recipe.image_name)} 
             alt={recipe.title} 
             className="w-full h-full object-cover"
-            onError={handleImageError}
+            onError={handleLocalImageError}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-500">
-            No image available
+          <div className="w-full h-full flex items-center justify-center text-gray-500 bg-gray-100">
+            <div className="text-center p-4">
+              <div className="text-5xl mb-2">🍽️</div>
+              <p>No image available for this recipe</p>
+            </div>
           </div>
         )}
       </div>

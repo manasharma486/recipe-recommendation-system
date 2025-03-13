@@ -53,8 +53,12 @@ DEFAULT_IMAGE_SVG = '''
 # Serve default image when image is not found
 @app.route('/api/images/default-recipe-image')
 def default_image():
+    """Return a default image SVG when no recipe image is available"""
+    print("Serving default image")
     svg_data = DEFAULT_IMAGE_SVG.encode('utf-8')
-    return Response(svg_data, mimetype='image/svg+xml')
+    response = Response(svg_data, mimetype='image/svg+xml')
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 # Test endpoint to list available images
 @app.route('/api/test_images', methods=['GET'])
@@ -88,10 +92,16 @@ def test_images():
 # Serve images from the Food Images directory - simplified approach
 @app.route('/api/images/<path:filename>')
 def serve_image(filename):
+    """Serve images from the images directory"""
     print(f"Image request received for: {filename}")
     
     # If the filename is "default-recipe-image", return the default SVG
     if filename == 'default-recipe-image':
+        return default_image()
+    
+    # Check if the images directory exists
+    if not os.path.exists(images_dir):
+        print(f"Images directory not found: {images_dir}")
         return default_image()
     
     # Define a function to check if a file exists with any of the common extensions
@@ -100,6 +110,7 @@ def serve_image(filename):
             full_name = f"{base_name}{ext}"
             full_path = os.path.join(images_dir, full_name)
             if os.path.exists(full_path):
+                print(f"Found image at: {full_path}")
                 return full_name
         return None
     
